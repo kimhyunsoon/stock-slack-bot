@@ -1,0 +1,37 @@
+{
+  "comm": {
+    "port": $SERVER_PORT
+  },
+  "db": {
+    "host": $MONGODB_HOST,
+    "port": $MONGODB_HOST_PORT,
+    "password": $MONGODB_USER_PASSWORD,
+    "user": $MONGODB_USER,
+    "database": $MONGODB_DATABASE,
+    "options": {}
+  },
+  "rest": {
+    "key": $REST_KEY
+  },
+  "logs": {
+    "path": "./logs",
+    "loggableEventNames": [
+    ]
+  },
+  "uploads": {
+    "path": "./uploads"
+  },
+  "jwt": {
+    "secret": $JWT_KEY,
+    "options": {
+      "access": {
+        "algorithm": "HS512",
+        "expiresIn": "7d"
+      },
+      "file": {
+        "algorithm": "HS256",
+        "expiresIn": "1h"
+      }
+    }
+  }
+}
