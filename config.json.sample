@@ -34,4 +34,9 @@
       }
     }
   }
+  "slack": {
+    "bot_token": $YOUR_SLACK_BOT_TOKEN,
+    "user_token": $YOUR_SLACK_USER_TOKEN,
+    "channel": $YOUR_SLACK_CHANNEL"
+  }
 }
