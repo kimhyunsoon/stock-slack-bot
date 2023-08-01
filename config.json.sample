@@ -37,6 +37,7 @@
   "slack": {
     "bot_token": $YOUR_SLACK_BOT_TOKEN,
     "user_token": $YOUR_SLACK_USER_TOKEN,
-    "channel": $YOUR_SLACK_CHANNEL"
+    "channel": $YOUR_SLACK_CHANNEL,
+    "stock_url": $STOCK_PRICE_URL
   }
 }

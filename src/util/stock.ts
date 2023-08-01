@@ -1,11 +1,11 @@
 import cheerio from 'cheerio';
 import axios from 'axios';
-import logger from '../debug/logger';
+import { slack } from '../config/config.json';
 import { Error } from '../debug/error';
 
 async function getPresentPrice(code: string): Promise<number> {
   try {
-    const html = await axios.get(`https://finance.naver.com/item/main.naver?code=${code}`);
+    const html = await axios.get(`${String(slack.stock_url)}${code}`);
     const $ = cheerio.load(html.data);
     const price = $('#chart_area > div.rate_info > div.today > p.no_today > em').text().replace(/^\s+|\s+$/gm, '').split('\n')[0].replace(',', '');
     return Number(price);
@@ -14,7 +14,7 @@ async function getPresentPrice(code: string): Promise<number> {
   }
 }
 
-function calculateDiffAndRatio(a:number, b:number): Record<string, number | string> {
+function calculateDiffAndRatio(a: number, b: number): Record<string, number | string> {
   const diff = b - a;
   const ratio = (diff / a) * 100;
 
