@@ -4,40 +4,33 @@ import { Error } from '../debug/error';
 import db from '.';
 import { payloadToListQuery, payloadToSummaryQuery } from './helper';
 
-interface StockInterface {
-  name: string
+interface StockLogInterface {
   code: string
-  count: number
-  average: number
+  price: number
   created: Date
-  updated: Date
-  disable: boolean
 }
 
-interface StockModel extends Model<StockInterface> {
+interface StockLogModel extends Model<StockLogInterface> {
   add: (_payload: Array<Record<string, unknown>>) => Promise<Record<string, unknown>>
   update: (_payload: Record<string, any>) => Promise<Record<string, unknown>>
   delete: (_payload: Array<Record<string, unknown>>) => Promise<Record<string, unknown>>
   get: (_payload: Record<string, string>) => Promise<Record<string, unknown>>
   getSummary: (_payload: Record<string, unknown>) => Promise<Record<string, unknown>>
-  getList: (_payload: Record<string, unknown>) => Promise<Record<string, any>>
+  getList: (_payload: Record<string, unknown>) => Promise<Record<string, unknown>>
+  getAveragePriceAfterDate: (_payload: Record<string, any>) => Promise<number>
 }
 
-const stockSchema = new Schema<StockInterface, StockModel>({
-  name: { type: String, required: true },
-  code: { type: String, required: true, unique: true },
-  count: { type: Number, required: true },
-  average: { type: Number, required: true },
+const stockLogSchema = new Schema<StockLogInterface, StockLogModel>({
+  code: { type: String, required: true, ref: 'Stock' },
+  price: { type: Number, required: true },
   created: { type: Date, default: Date.now },
-  updated: { type: Date, default: Date.now },
-  disable: { type: Boolean, required: true, default: false },
 });
 
-stockSchema.static('add', async (_payload: Array<Record<string, unknown>>): Promise<Record<string, unknown>> => {
+stockLogSchema.static('add', async (_payload: Array<Record<string, unknown>>): Promise<Record<string, unknown>> => {
   try {
     let result;
     await db.getInstance().transaction(async (session) => {
-      const collection = model('Stock');
+      const collection = model('StockLog');
       result = await db.getInstance().create(collection, _payload, session);
     });
     return JSON.parse(JSON.stringify(result));
@@ -46,13 +39,13 @@ stockSchema.static('add', async (_payload: Array<Record<string, unknown>>): Prom
   }
 });
 
-stockSchema.static('update', async (_payload: Record<string, any>): Promise<Record<string, unknown>> => {
+stockLogSchema.static('update', async (_payload: Record<string, any>): Promise<Record<string, unknown>> => {
   try {
     let result;
     await db.getInstance().transaction(async (session) => {
-      const collection = model('Stock');
+      const collection = model('StockLog');
       result = await db.getInstance().update(collection, _payload, session);
-      if (result == null) throw Error.notFoundData('stock-update');
+      if (result == null) throw Error.notFoundData('area-update');
     });
     return JSON.parse(JSON.stringify(result));
   } catch (error: unknown) {
@@ -60,16 +53,16 @@ stockSchema.static('update', async (_payload: Record<string, any>): Promise<Reco
   }
 });
 
-stockSchema.static('delete', async (_payload: Array<Record<string, unknown>>): Promise<Record<string, unknown>> => {
+stockLogSchema.static('delete', async (_payload: Array<Record<string, unknown>>): Promise<Record<string, unknown>> => {
   try {
     let result;
     await db.getInstance().transaction(async (session) => {
-      const collection = model('Stock');
+      const collection = model('StockLog');
       result = await db.getInstance().update(collection, {
         _ids: _payload,
         disable: true,
       }, session);
-      if (result == null) throw Error.notFoundData('stock-delete');
+      if (result == null) throw Error.notFoundData('area-delete');
     });
     return JSON.parse(JSON.stringify(result));
   } catch (error: unknown) {
@@ -77,15 +70,15 @@ stockSchema.static('delete', async (_payload: Array<Record<string, unknown>>): P
   }
 });
 
-stockSchema.static('get', async (_payload: Record<string, string>): Promise<Record<string, unknown>> => {
+stockLogSchema.static('get', async (_payload: Record<string, string>): Promise<Record<string, unknown>> => {
   try {
-    const collection = model('Stock');
+    const collection = model('StockLog');
     const [document] = await collection
       .aggregate([
         // 파이프라인 작성
         {
           $match: {
-            code: _payload.code,
+            _id: new Types.ObjectId(_payload._id),
             disable: false,
           },
         },
@@ -95,16 +88,16 @@ stockSchema.static('get', async (_payload: Record<string, string>): Promise<Reco
           },
         },
       ]);
-    if (document == null) throw Error.notFoundData('stock-get');
+    if (document == null) throw Error.notFoundData('area-get');
     return JSON.parse(JSON.stringify(document));
   } catch (error: unknown) {
     Error.makeThrow(error, 'crud');
   }
 });
 
-stockSchema.static('getSummary', async (_payload: Record<string, unknown>): Promise<Record<string, unknown>> => {
+stockLogSchema.static('getSummary', async (_payload: Record<string, unknown>): Promise<Record<string, unknown>> => {
   try {
-    const collection = model('Stock');
+    const collection = model('StockLog');
     const qurey = payloadToSummaryQuery([
       // 파이프라인 작성
     ], _payload);
@@ -120,9 +113,9 @@ stockSchema.static('getSummary', async (_payload: Record<string, unknown>): Prom
   }
 });
 
-stockSchema.static('getList', async (_payload: Record<string, unknown>): Promise<Record<string, any>> => {
+stockLogSchema.static('getList', async (_payload: Record<string, unknown>): Promise<Record<string, unknown>> => {
   try {
-    const collection = model('Stock');
+    const collection = model('StockLog');
     const query = payloadToListQuery([
       // 파이프라인 작성
     ], _payload);
@@ -140,6 +133,27 @@ stockSchema.static('getList', async (_payload: Record<string, unknown>): Promise
   }
 });
 
-const Stock = model<StockInterface, StockModel>('Stock', stockSchema);
+stockLogSchema.static('getAveragePriceAfterDate', async (_payload: Record<string, any>): Promise<number> => {
+  try {
+    const collection = model('StockLog');
+    const { date, code } = _payload;
+    const result = await collection.aggregate([
+      {
+        $match: { created: { $gt: date }, code },
+      },
+      {
+        $group: {
+          _id: null,
+          averagePrice: { $avg: '$price' },
+        },
+      },
+    ]);
+    return result[0]?.averagePrice | 0;
+  } catch (error: unknown) {
+    Error.makeThrow(error, 'crud');
+  }
+});
 
-export { Stock };
+const StockLog = model<StockLogInterface, StockLogModel>('StockLog', stockLogSchema);
+
+export { StockLog };
