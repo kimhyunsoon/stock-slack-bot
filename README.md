@@ -3,7 +3,7 @@
 # stock-slack-bot
 For a personal Slack notification server, some modifications are required to tailor it to individual preferences.
 
-**Please refer on the database and web server:**[micro](https://github.com/kimhyunsoon/micro-builder) [micro-mongo](https://github.com/kimhyunsoon/micro-mongo)  
+**Please refer on the web and database server:** [micro](https://github.com/kimhyunsoon/micro-builder) and [micro-mongo](https://github.com/kimhyunsoon/micro-mongo)  
 
 # Directory Structure
 ```
