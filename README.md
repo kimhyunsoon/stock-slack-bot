@@ -12,7 +12,7 @@ nfs
    └──uploads
    └──logs
 └──micro-nginx
-   └──htdocs****
+   └──htdocs
       │  "The frontend build artifacts are here."
    └──config
       │  nginx.conf
