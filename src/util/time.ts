@@ -10,6 +10,7 @@ const dateFormats = {
   timestamp: 'YYYY-MM-DDTHH:mm:ss.000Z',
   zuluTimestamp: 'YYYY-MM-DDTHH:mm:ss.000[Z]',
 };
+const days = ['일', '월', '화', '수', '목', '금', '토'];
 
 function timeGetter({ date = new Date(), type = 'utc', format = dateFormats.timestamp }): string {
   if (type === 'utc') {
@@ -38,12 +39,15 @@ export default {
   makeTimestamp(date: Date, type = 'utc') {
     return timeGetter({ date, type });
   },
-  getBeforeDays() {
-    return dayjs.utc().subtract(7, 'day').toDate();
+  getBeforeDays(day = 7) {
+    return dayjs.utc().subtract(day, 'day').toDate();
   },
   getStockLogDate() {
-    const days = ['일', '월', '화', '수', '목', '금', '토'];
     const now = dayjs(new Date()).utcOffset(9);
-    return `${now.format('YYYY-MM-DD')} ${days[now.day()]} ${now.format('HH:mm:ss')}`;
+    return `${now.format('YYYY-MM-DD')} ${days[now.day()]}요일 ${now.format('HH:mm:ss')}`;
+  },
+  makeChartDate(dateString: string) {
+    const date = dayjs(dateString).utcOffset(9);
+    return `${date.format('M/D')} ${days[date.day()]} ${date.format('HH시')}`;
   },
 };

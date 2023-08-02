@@ -1,8 +1,9 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { Schema, model, type Model, Types } from 'mongoose';
+import { Schema, model, type Model } from 'mongoose';
 import { Error } from '../debug/error';
 import db from '.';
 import { payloadToListQuery, payloadToSummaryQuery } from './helper';
+import time from '../util/time';
 
 interface StockInterface {
   name: string
@@ -124,7 +125,28 @@ stockSchema.static('getList', async (_payload: Record<string, unknown>): Promise
   try {
     const collection = model('Stock');
     const query = payloadToListQuery([
-      // 파이프라인 작성
+      {
+        $lookup: {
+          from: 'stocklogs',
+          let: { code: '$code' },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $and: [
+                    { $eq: ['$code', '$$code'] },
+                    { $gt: ['$created', time.getBeforeDays()] },
+                  ],
+                },
+              },
+            },
+            {
+              $sort: { created: 1 }, // 오래된 날짜 순으로 정렬
+            },
+          ],
+          as: 'logs',
+        },
+      },
     ], _payload);
     const result = await collection.aggregate([
       ...query,
